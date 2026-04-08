@@ -1,5 +1,7 @@
 import click
 from core.console import console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from core.plugins import load_plugins
 
 @click.group()
@@ -101,6 +103,52 @@ def email(email_address, export):
         export_results(email_address, 'email', all_results, export)
 
 @cli.command()
+@click.argument('target')
+@click.option('--export', type=click.Choice(['json', 'html']), default='html', help='Export results to a file')
+def intel(target, export):
+    """MASTER SCAN: Intelligence aggregation across all domains."""
+    console.print(Panel(f"[neon]🚀 Launching Master Intelligence Scan for:[/neon] [white]{target}[/white]", border_style="purple"))
+    
+    all_results = {}
+    seen_entities = set()
+    
+    # Intelligent target type detection
+    target_type = None
+    if "@" in target: target_type = 'email'
+    elif target.startswith('+') or target.isdigit(): target_type = 'phone'
+    elif "." in target and not target.endswith('.'): target_type = 'domain'
+    else: target_type = 'username'
+    
+    console.print(f"[dim]Detected Target Type: {target_type.upper()}[/dim]")
+    
+    plugins = load_plugins(target_type)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console
+    ) as progress:
+        scan_task = progress.add_task(f"[neon]Running {target_type} modules...", total=len(plugins))
+        for name, module in plugins.items():
+            progress.update(scan_task, description=f"[neon]Executing {name}...")
+            if hasattr(module, 'run'):
+                try:
+                    res = module.run(target)
+                    if res: all_results[name] = res
+                except Exception as e:
+                    console.print(f"[danger]Module {name} failed: {e}[/danger]")
+            progress.advance(scan_task)
+
+    # Trigger Elite Auto-Pivot
+    console.print("[purple]🔄 Searching for linked identities (Auto-Pivot)...[/purple]")
+    pivot_findings = analyze_and_pivot(all_results, target, seen_entities)
+    all_results.update(pivot_findings)
+    
+    if all_results:
+        export_results(target, target_type, all_results, export)
+    else:
+        console.print("[warning][-] No intelligence gathered during the scan.[/warning]")
+
+@cli.command()
 @click.argument('phone_number')
 @click.option('--export', type=click.Choice(['json', 'html']), help='Export results to a file')
 def phone(phone_number, export):
@@ -131,5 +179,6 @@ def phone(phone_number, export):
         export_results(phone_number, 'phone', all_results, export)
 
 if __name__ == '__main__':
-    console.print(f"[bold green]🧿 OmniSint v0.1[/bold green]")
+    from core.console import get_banner
+    console.print(get_banner())
     cli()

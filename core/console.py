@@ -1,13 +1,35 @@
 from rich.console import Console
 from rich.theme import Theme
+from rich.panel import Panel
+from rich.text import Text
 
-# Define custom themes for our OSINT tool
+# Elite Neon Theme for OmniSint
 custom_theme = Theme({
-    "info": "dim cyan",
-    "warning": "magenta",
+    "info": "bold cyan",
+    "warning": "bold yellow",
     "danger": "bold red",
     "success": "bold green",
-    "highlight": "bold yellow"
+    "highlight": "bold magenta",
+    "dim": "color(242)",
+    "neon": "bold #00ffd8",
+    "purple": "bold #bc00ff"
 })
 
 console = Console(theme=custom_theme)
+
+def get_banner():
+    banner = r"""
+      ::::::::  ::::     ::::  ::::    ::: :::::::::::  ::::::::  ::::::::::: ::::    ::: ::::::::::: 
+     :+:    :+: +:+:+: :+:+:+  :+:+:   :+:     :+:     :+:    :+:     :+:     :+:+:   :+:     :+:     
+     +:+    +:+ +:+ +:+:+ +:+  :+:+:+  +:+     +:+     +:+            +:+     :+:+:+  +:+     +:+     
+     +#+    +:+ +#+  +:+  +#+  +#+ +:+ +#+     +#+     +#++:++#++     +#+     +#+ +:+ +#+     +#+     
+     +#+    +:+ +#+       +#+  +#+  +#+#+#     +#+            +#+     +#+     +#+  +#+#+#     +#+     
+     #+#    #+# #+#       #+#  #+#   #+#+#     #+#     #+#    #+#     +#+     #+#   #+#+#     #+#     
+      ########  ###       ###  ###    #### ###########  ########  ########### ###    ####     ###     
+    """
+    return Panel(
+        Text(banner, style="neon"),
+        subtitle="[bold purple]v0.5 Elite Upgrade[/bold purple]",
+        border_style="purple",
+        padding=(1, 2)
+    )
