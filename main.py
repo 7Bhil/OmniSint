@@ -23,6 +23,7 @@ def user(username, export):
         return
         
     all_results = {}
+    seen_entities = set()
     for module_name, module in plugins.items():
         console.print(f"[dim]Running module: {module_name}[/dim]")
         if hasattr(module, 'run'):
@@ -33,7 +34,8 @@ def user(username, export):
             except Exception as e:
                 console.print(f"[bold red]Error in module {module_name}: {e}[/bold red]")
                 
-    analyze_and_pivot(all_results, username)
+    pivot_findings = analyze_and_pivot(all_results, username, seen_entities)
+    all_results.update(pivot_findings)
                 
     if export and all_results:
         export_results(username, 'username', all_results, export)
@@ -51,6 +53,7 @@ def domain(domain_name, export):
         return
         
     all_results = {}
+    seen_entities = set()
     for module_name, module in plugins.items():
         console.print(f"[dim]Running module: {module_name}[/dim]")
         if hasattr(module, 'run'):
@@ -61,7 +64,8 @@ def domain(domain_name, export):
             except Exception as e:
                 console.print(f"[bold red]Error in module {module_name}: {e}[/bold red]")
                 
-    analyze_and_pivot(all_results, domain_name)
+    pivot_findings = analyze_and_pivot(all_results, domain_name, seen_entities)
+    all_results.update(pivot_findings)
                 
     if export and all_results:
         export_results(domain_name, 'domain', all_results, export)
@@ -79,6 +83,7 @@ def email(email_address, export):
         return
         
     all_results = {}
+    seen_entities = set()
     for module_name, module in plugins.items():
         console.print(f"[dim]Running module: {module_name}[/dim]")
         if hasattr(module, 'run'):
@@ -89,7 +94,8 @@ def email(email_address, export):
             except Exception as e:
                 console.print(f"[bold red]Error in module {module_name}: {e}[/bold red]")
                 
-    analyze_and_pivot(all_results, email_address)
+    pivot_findings = analyze_and_pivot(all_results, email_address, seen_entities)
+    all_results.update(pivot_findings)
                 
     if export and all_results:
         export_results(email_address, 'email', all_results, export)
@@ -107,6 +113,7 @@ def phone(phone_number, export):
         return
         
     all_results = {}
+    seen_entities = set()
     for module_name, module in plugins.items():
         console.print(f"[dim]Running module: {module_name}[/dim]")
         if hasattr(module, 'run'):
@@ -117,7 +124,8 @@ def phone(phone_number, export):
             except Exception as e:
                 console.print(f"[bold red]Error in module {module_name}: {e}[/bold red]")
                 
-    analyze_and_pivot(all_results, phone_number)
+    pivot_findings = analyze_and_pivot(all_results, phone_number, seen_entities)
+    all_results.update(pivot_findings)
                 
     if export and all_results:
         export_results(phone_number, 'phone', all_results, export)

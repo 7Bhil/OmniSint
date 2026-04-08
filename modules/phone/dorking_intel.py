@@ -26,7 +26,13 @@ def search_duckduckgo(query: str):
         time.sleep(random.uniform(0.5, 1.5))
         response = requests.post(url, headers=headers, data=data, timeout=10)
         if response.status_code == 200:
-            soup = BeautifulSoup(response.text, "lxml" if "lxml" in response.text else "html.parser")
+            try:
+                import lxml
+                parser = "lxml"
+            except ImportError:
+                parser = "html.parser"
+                
+            soup = BeautifulSoup(response.text, parser)
             results = []
             
             for result in soup.find_all('div', class_='result'):

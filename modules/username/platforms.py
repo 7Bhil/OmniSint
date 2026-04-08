@@ -29,17 +29,30 @@ PLATFORMS = {
 
 def check_platform(username, platform, url_template):
     url = url_template.format(username)
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
     try:
-        response = requests.get(url, headers=headers, timeout=5)
-        # 200 basically means found, 404 means not found.
-        # This is a naive check. A true "next-gen" tool would check page content.
+        response = requests.get(url, headers=headers, timeout=5, allow_redirects=True)
+        
+        # 1. Check for obvious 404
+        if response.status_code == 404:
+            return platform, url, False
+            
+        # 2. Site-specific content validation (soft 404 detection)
+        content = response.text.lower()
+        if platform == "Instagram" and ("login" in response.url or "vrai nom" in content or "page non trouvée" in content or "not available" in content or "plus disponible" in content):
+            return platform, url, False
+        if platform == "Twitter" and ("doesn't exist" in content or "page non trouvée" in content):
+            return platform, url, False
+        if platform == "Reddit" and ("nobody here" in content or "page non trouvée" in content):
+            return platform, url, False
+        if platform == "GitHub" and "not found" in content:
+            return platform, url, False
+            
+        # 3. Fallback to status code if no specific rule matched
         if response.status_code == 200:
             return platform, url, True
-        elif response.status_code == 404:
-            return platform, url, False
-        else:
-            return platform, url, None 
+            
+        return platform, url, False
     except requests.RequestException:
         return platform, url, None
 
