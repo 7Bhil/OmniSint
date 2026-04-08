@@ -5,13 +5,12 @@ from core.console import console
 # Note: For free users, the API is rate-limited and requires a header.
 # We'll use a simplified check or a mock for demonstration in this Elite build.
 
-def check_breaches(email):
+def check_breaches(target):
     try:
-        # Simplified public lookup via a secondary reliable source for OSINT
-        url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
+        # HIBP supports both emails and phone numbers (though phone numbers usually require full international format)
+        url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{target}"
         headers = {
             "User-Agent": "OmniSint-Elite-Investigator",
-            # "hibp-api-key": "REDACTED" - User would normally provide this
         }
         response = requests.get(url, headers=headers, timeout=5)
         
@@ -25,11 +24,14 @@ def check_breaches(email):
         pass
     return None
 
-def run(email: str):
-    console.print(f"[neon]⚡ Checking Data Breaches for:[/neon] [white]{email}[/white]")
-    results = {"email": email}
+def run(target: str):
+    is_phone = target.startswith('+') or target.isdigit()
+    label = "Phone Number" if is_phone else "Email"
     
-    breaches = check_breaches(email)
+    console.print(f"[neon]⚡ Checking Data Breaches for {label}:[/neon] [white]{target}[/white]")
+    results = {"target": target, "type": label}
+    
+    breaches = check_breaches(target)
     
     if isinstance(breaches, list):
         if breaches:
@@ -39,13 +41,11 @@ def run(email: str):
             for b in breaches[:5]:
                 console.print(f"    - [dim]{b.get('Name')}[/dim]")
         else:
-            console.print("  [success][+] Secure. No mentions found in major leak databases.[/success]")
+            console.print(f"  [success][+] Secure. No mentions found for this {label.lower()} in major leak databases.[/success]")
             results["breach_count"] = 0
             
     elif breaches == "API_KEY_REQUIRED":
-        # Graceful fallback/explanation for Elite version
         console.print("  [warning][!] HIBP API Request requires an API Key.[/warning]")
-        console.print("  [dim]Skipping deep leak check...[/dim]")
         results["status"] = "API_KEY_REQUIRED"
     else:
         console.print("  [danger][!] Breach service unreachable or rate-limited.[/danger]")

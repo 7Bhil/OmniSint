@@ -88,11 +88,44 @@ def run(phone_number: str):
                 
     if all_hits:
         console.print(f"\n[success][+] FOUND {len(all_hits)} Deep Web/Social Mentions![/success]")
-        for i, hit in enumerate(all_hits[:10]): # Show top 10
-            console.print(f"  [bold magenta]► {hit['title']}[/bold magenta]")
-            console.print(f"     [dim]{hit['snippet'][:200]}...[/dim]")
         
+        discovered_names = set()
+        discovered_emails = set()
+        
+        # Regex for potential names: Capitalized words (2-3 words) often preceding or following phone indicators
+        # This is a heuristic for OSINT
+        name_patterns = [
+            r'Owner:\s*([A-Z][a-z]+\s+[A-Z][a-z]+)',
+            r'Contact:\s*([A-Z][a-z]+\s+[A-Z][a-z]+)',
+            r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+-\s+LinkedIn',
+            r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+on\s+Instagram'
+        ]
+        
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        
+        for hit in all_hits:
+            # Extract names
+            for pattern in name_patterns:
+                matches = re.finditer(pattern, hit['title'] + " " + hit['snippet'])
+                for m in matches:
+                    discovered_names.add(m.group(1))
+            
+            # Extract emails
+            emails = re.findall(email_pattern, hit['snippet'] + " " + hit['title'])
+            for e in emails:
+                discovered_emails.add(e.lower())
+
         results["dork_hits"] = all_hits
+        results["discovered_names"] = list(discovered_names)
+        results["discovered_emails"] = list(discovered_emails)
+        
+        if discovered_names:
+            console.print(f"  [info]👤 Potential Names Detected:[/info] [bold white]{', '.join(discovered_names)}[/bold white]")
+        if discovered_emails:
+            console.print(f"  [info]📧 Potential Emails Detected:[/info] [bold white]{', '.join(discovered_emails)}[/bold white]")
+            
+        for hit in all_hits[:5]:
+            console.print(f"  [bold magenta]► {hit['title']}[/bold magenta]")
     else:
         console.print("[warning][-] This ghost number left zero open-source traces online.[/warning]")
         

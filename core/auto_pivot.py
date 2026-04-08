@@ -37,19 +37,25 @@ def analyze_and_pivot(raw_data: dict, current_target: str, seen_entities: set):
     emails = set(re.findall(email_pattern, data_str))
     wallets = set(re.findall(btc_pattern, data_str)) | set(re.findall(eth_pattern, data_str))
     
-    for email in emails:
+    # Extract emails from discovered lists if present (from dorking/breaches)
+    discovered_emails = raw_data.get("discovered_emails", [])
+    for email in discovered_emails:
         email = email.lower()
-        if email not in seen_entities and not email.startswith('admin@') and not email.startswith('no-reply@'):
-            console.print(f"\n[purple]🔄 [Auto-Pivot] Discovered Email Target: {email}[/purple]")
+        if email not in seen_entities:
+            console.print(f"\n[purple]🔄 [Auto-Pivot] Pivoting on Discovered Email: {email}[/purple]")
             seen_entities.add(email)
             results = execute_module('email', email, seen_entities)
             pivot_results.update(results)
-            
-    for wallet in wallets:
-        if wallet.lower() not in seen_entities:
-            console.print(f"\n[purple]🔄 [Auto-Pivot] Discovered Crypto Wallet: {wallet}[/purple]")
-            seen_entities.add(wallet.lower())
-            results = execute_module('crypto', wallet, seen_entities)
+
+    # Extract names and trigger a 'username' style search as a proxy for identity
+    discovered_names = raw_data.get("discovered_names", [])
+    for name in discovered_names:
+        clean_name = name.lower().replace(" ", "")
+        if clean_name not in seen_entities:
+            console.print(f"\n[purple]🔄 [Auto-Pivot] Pivoting on Discovered Name: {name}[/purple]")
+            seen_entities.add(clean_name)
+            # We use 'username' logic for name investigation (social accounts etc)
+            results = execute_module('username', clean_name, seen_entities)
             pivot_results.update(results)
-            
+
     return pivot_results
