@@ -2,7 +2,9 @@ import trio
 import httpx
 import holehe.modules
 from holehe.core import import_submodules
+from typing import List, Dict, Any
 from core.console import console
+from core.network import get_proxy
 
 async def check_email(email):
     out = []
@@ -20,21 +22,24 @@ async def check_email(email):
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
     }
     
-    async with httpx.AsyncClient(headers=headers, timeout=15) as client:
+    proxies = get_proxy()
+    proxy_config = proxies.get("http") if proxies else None
+
+    async with httpx.AsyncClient(headers=headers, timeout=15, proxies=proxy_config) as client:
         async with trio.open_nursery() as nursery:
             for module in modules:
                 nursery.start_soon(run_module, module, email, client, out)
                 
     return out
 
-def run(email: str):
-    console.print(f"\n[bold cyan]🚀 Starting Deep Account Footprinting for '{email}'...[/bold cyan]")
+def run(email: str) -> Dict[str, Any]:
+    console.print(f"\n[bold cyan]🚀 Deep Account Footprinting for '{email}'...[/bold cyan]")
     
-    with console.status("[bold magenta]Scanning 120+ platforms simultaneously via Password Recovery modules...[/bold magenta]", spinner="bouncingBar"):
+    with console.status("[bold magenta]Scanning 120+ platforms (Proxy Enhanced)...[/bold magenta]", spinner="point"):
         results_list = trio.run(check_email, email)
         
-    results = {"email": email, "found_accounts": []}
-    found_count = 0
+    results: Dict[str, Any] = {"email": email, "found_accounts": []}
+    found_count: int = 0
     
     for item in results_list:
         if item.get("exists") is True:

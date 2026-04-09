@@ -1,4 +1,5 @@
 import dns.resolver
+from typing import List, Dict, Any
 from core.console import console
 
 DISPOSABLE_DOMAINS = [
@@ -15,9 +16,9 @@ def get_dns_records(domain: str, record_type: str):
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.exception.Timeout, dns.resolver.NoNameservers):
         return []
 
-def run(email: str):
+def run(email: str) -> Dict[str, Any]:
     console.print(f"[info]Starting Email OSINT for '{email}'...[/info]")
-    results = {"email": email}
+    results: Dict[str, Any] = {"email": email}
     
     if "@" not in email:
         console.print("[danger][!] Invalid email address.[/danger]")
@@ -40,9 +41,8 @@ def run(email: str):
     console.print("[info]Checking Mail Exchange (MX) records...[/info]")
     mx_records = get_dns_records(domain, 'MX')
     if mx_records:
-        console.print("[success][+] MX Records Found (Domain receives email):[/success]")
-        for mx in mx_records:
-            console.print(f"  [dim]- {mx}[/dim]")
+        primary_mx = mx_records[0].split()[-1]
+        console.print(f"[success][+] MX Records Found: {len(mx_records)} detected (Primary: {primary_mx})[/success]")
         results["mx_records"] = mx_records
     else:
         console.print("[warning][-] No MX records found. This domain might not receive emails.[/warning]")
