@@ -14,9 +14,9 @@ from core.auto_pivot import analyze_and_pivot
 
 @cli.command()
 @click.argument('username')
-@click.option('--nsfw', is_flag=True, default=False, help='Enable adult platform scanning')
+@click.option('--18', 'adult_content', is_flag=True, default=False, help='Enable adult platform scanning (+18)')
 @click.option('--export', type=click.Choice(['json', 'html']), help='Export results to a file')
-def user(username, nsfw, export):
+def user(username, adult_content, export):
     """Search for a username across multiple platforms."""
     console.print(f"[bold blue]🔍 Searching for username:[/bold blue] [bold white]{username}[/bold white]")
     plugins = load_plugins('username')
@@ -32,7 +32,7 @@ def user(username, nsfw, export):
         if hasattr(module, 'run'):
             try:
                 if module_name == 'platforms':
-                    result = module.run(username, nsfw=nsfw)
+                    result = module.run(username, adult_content=adult_content)
                 else:
                     result = module.run(username)
                 if result:
@@ -108,9 +108,9 @@ def email(email_address, export):
 
 @cli.command()
 @click.argument('target')
-@click.option('--nsfw', is_flag=True, default=False, help='Enable adult platform scanning')
+@click.option('--18', 'adult_content', is_flag=True, default=False, help='Enable adult platform scanning (+18)')
 @click.option('--export', type=click.Choice(['json', 'html']), default='html', help='Export results to a file')
-def intel(target, nsfw, export):
+def intel(target, adult_content, export):
     """MASTER SCAN: Intelligence aggregation across all domains."""
     console.print(Panel(f"[neon]🚀 Launching Master Intelligence Scan for:[/neon] [white]{target}[/white]", border_style="purple"))
     
@@ -138,7 +138,7 @@ def intel(target, nsfw, export):
             if hasattr(module, 'run'):
                 try:
                     if name == 'platforms':
-                        res = module.run(target, nsfw=nsfw)
+                        res = module.run(target, adult_content=adult_content)
                     else:
                         res = module.run(target)
                     if res: all_results[name] = res

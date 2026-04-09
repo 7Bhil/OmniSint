@@ -201,18 +201,18 @@ def check_platform(username, platform, url_template):
     except requests.RequestException:
         return platform, url, None, None
 
-def run(username: str, nsfw: bool = False):
+def run(username: str, adult_content: bool = False):
     console.print(f"[bold cyan]🚀 Launching concurrent username scan...[/bold cyan]")
-    if nsfw:
-        console.print("[bold yellow]🔞 NSFW Platforms ENABLED.[/bold yellow]")
+    if adult_content:
+        console.print("[bold red]🔞 [18+] Platforms ENABLED.[/bold red]")
     
     results = {}
     found_count = 0
     
-    # Filter platforms based on NSFW flag
+    # Filter platforms based on adult content filter
     filtered_platforms = {}
     for name, url in PLATFORMS.items():
-        if name in ADULT_PLATFORMS and not nsfw:
+        if name in ADULT_PLATFORMS and not adult_content:
             continue
         filtered_platforms[name] = url
         
