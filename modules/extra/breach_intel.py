@@ -7,11 +7,17 @@ from core.network import request as network_request
 # Note: For free users, the API is rate-limited and requires a header.
 # We'll use a simplified check or a mock for demonstration in this Elite build.
 
+from core.config import Config
+
 def check_breaches(target):
     try:
-        # HIBP supports both emails and phone numbers (though phone numbers usually require full international format)
+        # HIBP supports both emails and phone numbers
         url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{target}"
-        res = network_request(url, timeout=5)
+        headers = {}
+        if Config.HIBP_API_KEY:
+            headers["hibp-api-key"] = Config.HIBP_API_KEY
+            
+        res = network_request(url, headers=headers, timeout=5)
         
         status_code = res.get("status_code", 0)
         
@@ -38,8 +44,9 @@ def run(target: str) -> Dict[str, Any]:
         if breaches:
             console.print(f"  [danger][!] POISONED![/danger] Found in [bold red]{len(breaches)}[/bold red] public data leaks.")
             results["breach_count"] = len(breaches)
-            results["breaches"] = [b.get('Name') for b in breaches]
-            for b in breaches[:5]:
+            # Limit display to first 5
+            display_breaches = breaches[:5] if isinstance(breaches, list) else []
+            for b in display_breaches:
                 console.print(f"    - [dim]{b.get('Name')}[/dim]")
         else:
             console.print(f"  [success][+] Secure. No mentions found for this {label.lower()} in major leak databases.[/success]")

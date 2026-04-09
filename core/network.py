@@ -1,10 +1,10 @@
-import os
 import random
 import requests
-import json
 import hashlib
-from datetime import datetime, timedelta
 from core.console import console
+from core.config import Config
+from core.proxy_manager import proxy_manager
+from core.cache import cache_engine
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -14,44 +14,19 @@ USER_AGENTS = [
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1"
 ]
 
-CACHE_DIR = os.path.join(os.path.expanduser("~"), ".omnisint_cache")
-PROXY_FILE = "proxies.txt"
-
-if not os.path.exists(CACHE_DIR):
-    os.makedirs(CACHE_DIR)
-
-def get_proxy():
-    """Load and return a random proxy from proxies.txt if it exists."""
-    if not os.path.exists(PROXY_FILE):
-        return None
-    try:
-        with open(PROXY_FILE, "r") as f:
-            proxies = [line.strip() for line in f if line.strip()]
-        if not proxies:
-            return None
-        proxy = random.choice(proxies)
-        # Assuming format is ip:port or user:pass@ip:port
-        return {"http": f"http://{proxy}", "https": f"http://{proxy}"}
-    except Exception:
-        return None
-
-def request(url, method="GET", use_cache=True, expiry_hours=12, **kwargs):
+def request(url, method="GET", use_cache=True, expiry_hours=None, **kwargs):
     """
-    Centralized request handler with user-agent rotation, proxy support, and caching.
+    Elite Request Handler v1.1.0
+    Features: User-Agent Rotation, SQLite Caching, Cycling Proxies, Tor Support.
     """
-    url_hash = hashlib.md5(url.encode()).hexdigest()
-    cache_path = os.path.join(CACHE_DIR, f"{url_hash}.json")
-
-    # 1. Check Cache
-    if use_cache and os.path.exists(cache_path):
-        try:
-            with open(cache_path, "r") as f:
-                cache_data = json.load(f)
-                cached_time = datetime.fromisoformat(cache_data["timestamp"])
-                if datetime.now() - cached_time < timedelta(hours=expiry_hours):
-                    return cache_data["content"]
-        except (Exception, json.JSONDecodeError):
-            pass
+    # 1. Check SQLite Cache
+    cache_key = hashlib.md5(f"{method}:{url}:{json_stable(kwargs.get('params', {}))}".encode()).hexdigest()
+    ttl = expiry_hours * 3600 if expiry_hours else Config.CACHE_TTL
+    
+    if use_cache:
+        cached_result = cache_engine.get(cache_key, ttl)
+        if cached_result:
+            return cached_result
 
     # 2. Setup Headers & Proxies
     headers = kwargs.get("headers", {})
@@ -59,15 +34,15 @@ def request(url, method="GET", use_cache=True, expiry_hours=12, **kwargs):
         headers["User-Agent"] = random.choice(USER_AGENTS)
     kwargs["headers"] = headers
     
-    proxies = get_proxy()
+    # Get cycling proxy or Tor
+    proxies = proxy_manager.get_proxy()
     if proxies:
         kwargs["proxies"] = proxies
 
     # 3. Execute Request
     try:
-        # Avoid hanging forever
         if "timeout" not in kwargs:
-            kwargs["timeout"] = 10
+            kwargs["timeout"] = Config.DEFAULT_TIMEOUT
             
         response = requests.request(method, url, **kwargs)
         
@@ -77,22 +52,20 @@ def request(url, method="GET", use_cache=True, expiry_hours=12, **kwargs):
             "url": response.url
         }
 
-        # 4. Cache and Return
-        if response.status_code == 200:
-            if use_cache:
-                with open(cache_path, "w") as f:
-                    cache_content = {
-                        "timestamp": datetime.now().isoformat(),
-                        "content": result,
-                        "original_url": url
-                    }
-                    json.dump(cache_content, f)
+        # 4. Store in SQLite Cache if successful
+        if response.status_code == 200 and use_cache:
+            cache_engine.set(cache_key, result)
+            
         return result
+        
     except requests.RequestException as e:
         return {"status_code": 0, "text": "", "url": url, "error": str(e)}
 
+def json_stable(d):
+    import json
+    return json.dumps(d, sort_keys=True)
+
 def clear_cache():
-    """Clear all cached requests."""
-    for f in os.listdir(CACHE_DIR):
-        os.remove(os.path.join(CACHE_DIR, f))
-    console.print("[success]✓ Networking cache cleared.[/success]")
+    """Clear the SQLite networking cache."""
+    cache_engine.clear()
+    console.print("[success]✓ SQLite Networking cache cleared.[/success]")
