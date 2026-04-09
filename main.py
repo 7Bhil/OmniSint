@@ -14,8 +14,9 @@ from core.auto_pivot import analyze_and_pivot
 
 @cli.command()
 @click.argument('username')
+@click.option('--nsfw', is_flag=True, default=False, help='Enable adult platform scanning')
 @click.option('--export', type=click.Choice(['json', 'html']), help='Export results to a file')
-def user(username, export):
+def user(username, nsfw, export):
     """Search for a username across multiple platforms."""
     console.print(f"[bold blue]🔍 Searching for username:[/bold blue] [bold white]{username}[/bold white]")
     plugins = load_plugins('username')
@@ -30,7 +31,10 @@ def user(username, export):
         console.print(f"[dim]Running module: {module_name}[/dim]")
         if hasattr(module, 'run'):
             try:
-                result = module.run(username)
+                if module_name == 'platforms':
+                    result = module.run(username, nsfw=nsfw)
+                else:
+                    result = module.run(username)
                 if result:
                     all_results[module_name] = result
             except Exception as e:
@@ -104,8 +108,9 @@ def email(email_address, export):
 
 @cli.command()
 @click.argument('target')
+@click.option('--nsfw', is_flag=True, default=False, help='Enable adult platform scanning')
 @click.option('--export', type=click.Choice(['json', 'html']), default='html', help='Export results to a file')
-def intel(target, export):
+def intel(target, nsfw, export):
     """MASTER SCAN: Intelligence aggregation across all domains."""
     console.print(Panel(f"[neon]🚀 Launching Master Intelligence Scan for:[/neon] [white]{target}[/white]", border_style="purple"))
     
@@ -132,7 +137,10 @@ def intel(target, export):
             progress.update(scan_task, description=f"[neon]Executing {name}...")
             if hasattr(module, 'run'):
                 try:
-                    res = module.run(target)
+                    if name == 'platforms':
+                        res = module.run(target, nsfw=nsfw)
+                    else:
+                        res = module.run(target)
                     if res: all_results[name] = res
                 except Exception as e:
                     console.print(f"[danger]Module {name} failed: {e}[/danger]")

@@ -2,7 +2,6 @@ import socket
 import requests
 import whois
 from core.console import console
-from core.console import console
 
 def get_ip_info(ip):
     try:

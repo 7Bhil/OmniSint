@@ -101,6 +101,11 @@ PLATFORMS = {
     "Stripchat": "https://stripchat.com/{}"
 }
 
+ADULT_PLATFORMS = [
+    "Pornhub", "OnlyFans", "Chaturbate", "BongaCams", 
+    "Cam4", "Camsoda", "MyFreeCams", "Stripchat"
+]
+
 def check_platform(username, platform, url_template):
     url = url_template.format(username)
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
@@ -196,11 +201,22 @@ def check_platform(username, platform, url_template):
     except requests.RequestException:
         return platform, url, None, None
 
-def run(username: str):
+def run(username: str, nsfw: bool = False):
     console.print(f"[bold cyan]🚀 Launching concurrent username scan...[/bold cyan]")
+    if nsfw:
+        console.print("[bold yellow]🔞 NSFW Platforms ENABLED.[/bold yellow]")
+    
     results = {}
     found_count = 0
-    total_platforms = len(PLATFORMS)
+    
+    # Filter platforms based on NSFW flag
+    filtered_platforms = {}
+    for name, url in PLATFORMS.items():
+        if name in ADULT_PLATFORMS and not nsfw:
+            continue
+        filtered_platforms[name] = url
+        
+    total_platforms = len(filtered_platforms)
     
     with Progress(
         SpinnerColumn(),
@@ -213,7 +229,7 @@ def run(username: str):
         task = progress.add_task(f"[cyan]Scanning {total_platforms} platforms...", total=total_platforms)
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-            futures = {executor.submit(check_platform, username, platform, url): platform for platform, url in PLATFORMS.items()}
+            futures = {executor.submit(check_platform, username, platform, url): platform for platform, url in filtered_platforms.items()}
             
             for future in concurrent.futures.as_completed(futures):
                 platform = futures[future]

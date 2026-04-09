@@ -1,28 +1,33 @@
 import json
 import os
+import html
 from datetime import datetime
 from core.console import console
 
 def generate_mermaid_graph(target, results):
+    escaped_target = html.escape(str(target))
     graph = ["graph TD"]
-    graph.append(f"    T[Target: {target}]")
+    graph.append(f"    T[Target: {escaped_target}]")
     
     for module, data in results.items():
-        m_id = module.replace(" ", "_")
-        graph.append(f"    T --> {m_id}[Module: {module}]")
+        escaped_module = html.escape(str(module))
+        m_id = escaped_module.replace(" ", "_")
+        graph.append(f"    T --> {m_id}[Module: {escaped_module}]")
         
         # Visualize key findings as child nodes
         if isinstance(data, dict):
             # Check for discovered emails
             if "discovered_emails" in data:
                 for email in data["discovered_emails"]:
-                    e_id = email.replace("@", "_at_").replace(".", "_")
-                    graph.append(f"    {m_id} -- discovered --> E_{e_id}[Email: {email}]")
+                    escaped_email = html.escape(str(email))
+                    e_id = escaped_email.replace("@", "_at_").replace(".", "_")
+                    graph.append(f"    {m_id} -- discovered --> E_{e_id}[Email: {escaped_email}]")
             # Check for discovered names
             if "discovered_names" in data:
                 for name in data["discovered_names"]:
-                    n_id = name.replace(" ", "_")
-                    graph.append(f"    {m_id} -- identity --> N_{n_id}[Name: {name}]")
+                    escaped_name = html.escape(str(name))
+                    n_id = escaped_name.replace(" ", "_")
+                    graph.append(f"    {m_id} -- identity --> N_{n_id}[Name: {escaped_name}]")
             # Check for crypto wallets
             if "btc_info" in data or "eth_info" in data:
                 graph.append(f"    {m_id} -- owner --> CW[Crypto Wallet]")
@@ -31,7 +36,8 @@ def generate_mermaid_graph(target, results):
 
 def export_results(target: str, domain_type: str, results: dict, format_type: str):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"omnisint_{domain_type}_{target}_{timestamp}.{format_type}"
+    escaped_target = html.escape(str(target))
+    filename = f"omnisint_{domain_type}_{escaped_target.replace('/', '_')}_{timestamp}.{format_type}"
     
     os.makedirs('reports', exist_ok=True)
     filepath = os.path.join('reports', filename)
@@ -48,7 +54,7 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>OmniSint Elite Report - {target}</title>
+            <title>OmniSint Elite Report - {escaped_target}</title>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
             <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
             <script>mermaid.initialize({{startOnLoad:true, theme:'dark'}});</script>
@@ -151,18 +157,18 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
                 <header>
                     <div>
                         <h1>🧿 OmniSint <span style="color:#fff">Elite</span></h1>
-                        <p style="color:#888; margin: 5px 0 0 0;">Intelligence Report for <strong>{target}</strong></p>
+                        <p style="color:#888; margin: 5px 0 0 0;">Intelligence Report for <strong>{escaped_target}</strong></p>
                     </div>
                     <div class="badge">Session Secure</div>
                 </header>
-
+        
                 <div class="stats">
                     <div class="stat-card">
                         <div class="stat-value">{len(results)}</div>
                         <div class="stat-label">Modules Deployed</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">{domain_type.upper()}</div>
+                        <div class="stat-value">{html.escape(str(domain_type).upper())}</div>
                         <div class="stat-label">Initial Pivot</div>
                     </div>
                     <div class="stat-card">
@@ -170,7 +176,7 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
                         <div class="stat-label">Generation Time</div>
                     </div>
                 </div>
-
+        
                 <div class="graph-section">
                     <div class="section-title">🕸️ Intelligence Graph</div>
                     <div class="mermaid">
@@ -181,9 +187,9 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
         for module, data in results.items():
             html_content += f"""
             <div class="module-card">
-                <div class="module-header">📡 MODULE: {module.upper()}</div>
+                <div class="module-header">📡 MODULE: {html.escape(str(module).upper())}</div>
                 <div class="module-content">
-                    <pre>{json.dumps(data, indent=4)}</pre>
+                    <pre>{html.escape(json.dumps(data, indent=4))}</pre>
                 </div>
             </div>
             """
@@ -197,4 +203,4 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
         with open(filepath, 'w') as f:
             f.write(html_content)
             
-    console.print(f"\n[success]💎 Elite Glassmorphism Report with Graph saved to: {filepath}[/success]")
+        console.print(f"\n[success]💎 Elite Glassmorphism Report with Graph saved to: {filepath}[/success]")
