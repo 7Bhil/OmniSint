@@ -164,7 +164,7 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
         
                 <div class="stats">
                     <div class="stat-card">
-                        <div class="stat-value">{len(results)}</div>
+                        <div class="stat-value">{len(results) - 1 if "correlations" in results else len(results)}</div>
                         <div class="stat-label">Modules Deployed</div>
                     </div>
                     <div class="stat-card">
@@ -176,15 +176,57 @@ def export_results(target: str, domain_type: str, results: dict, format_type: st
                         <div class="stat-label">Generation Time</div>
                     </div>
                 </div>
-        
+
                 <div class="graph-section">
                     <div class="section-title">🕸️ Intelligence Graph</div>
                     <div class="mermaid">
                         {mermaid_code}
                     </div>
                 </div>
+
+                <!-- NEW: Identity Correlation Section -->
+                <div class="section-title">🧠 OmniCorrelator Findings</div>
+                <div id="correlations">
+        """
+        correlations = results.get("correlations", [])
+        if correlations:
+            for c in correlations:
+                score_color = "#00ffd8" if c['score'] > 70 else "#facc15" if c['score'] > 40 else "#94a3b8"
+                html_content += f"""
+                <div class="module-card" style="border-left: 5px solid {score_color}">
+                    <div class="module-header" style="justify-content: space-between;">
+                        <span>🔗 Identity Linkage</span>
+                        <span style="color: {score_color}; font-weight: 800;">{c['score']}% Confidence</span>
+                    </div>
+                    <div class="module-content">
+                        <div style="font-weight: 600; margin-bottom: 15px; color: #fff;">
+                            {html.escape(c['entity_a'])} <span style="color: #666">↔</span> {html.escape(c['entity_b'])}
+                        </div>
+                        <ul style="margin: 0; padding-left: 20px; color: #888; font-size: 0.9em;">
+                """
+                for reason in c['reasons']:
+                    html_content += f"<li>{html.escape(reason)}</li>"
+                html_content += """
+                        </ul>
+                    </div>
+                </div>
+                """
+        else:
+            html_content += """
+            <div class="module-card" style="text-align: center; padding: 40px; color: #555;">
+                No significant cross-identity correlations discovered yet.
+            </div>
+            """
+
+        html_content += """
+                </div>
+                <!-- End Correlation Section -->
+
+                <div class="section-title">📡 Detailed Module Intelligence</div>
         """
         for module, data in results.items():
+            if module == "correlations":
+                continue
             html_content += f"""
             <div class="module-card">
                 <div class="module-header">📡 MODULE: {html.escape(str(module).upper())}</div>

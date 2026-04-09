@@ -11,6 +11,7 @@ def cli():
 
 from core.report_generator import export_results
 from core.auto_pivot import analyze_and_pivot
+from core.correlator import correlate_identities, display_correlations
 
 @cli.command()
 @click.argument('username')
@@ -42,6 +43,10 @@ def user(username, adult_content, export):
                 
     pivot_findings = analyze_and_pivot(all_results, username, seen_entities)
     all_results.update(pivot_findings)
+    
+    correlations = correlate_identities(all_results, username)
+    display_correlations(correlations)
+    all_results["correlations"] = correlations
                 
     if export and all_results:
         export_results(username, 'username', all_results, export)
@@ -72,6 +77,10 @@ def domain(domain_name, export):
                 
     pivot_findings = analyze_and_pivot(all_results, domain_name, seen_entities)
     all_results.update(pivot_findings)
+    
+    correlations = correlate_identities(all_results, domain_name)
+    display_correlations(correlations)
+    all_results["correlations"] = correlations
                 
     if export and all_results:
         export_results(domain_name, 'domain', all_results, export)
@@ -102,6 +111,10 @@ def email(email_address, export):
                 
     pivot_findings = analyze_and_pivot(all_results, email_address, seen_entities)
     all_results.update(pivot_findings)
+    
+    correlations = correlate_identities(all_results, email_address)
+    display_correlations(correlations)
+    all_results["correlations"] = correlations
                 
     if export and all_results:
         export_results(email_address, 'email', all_results, export)
@@ -151,6 +164,11 @@ def intel(target, adult_content, export):
     pivot_findings = analyze_and_pivot(all_results, target, seen_entities)
     all_results.update(pivot_findings)
     
+    # Run OmniCorrelator
+    correlations = correlate_identities(all_results, target)
+    display_correlations(correlations)
+    all_results["correlations"] = correlations
+    
     if all_results:
         export_results(target, target_type, all_results, export)
     else:
@@ -182,6 +200,10 @@ def phone(phone_number, export):
                 
     pivot_findings = analyze_and_pivot(all_results, phone_number, seen_entities)
     all_results.update(pivot_findings)
+    
+    correlations = correlate_identities(all_results, phone_number)
+    display_correlations(correlations)
+    all_results["correlations"] = correlations
                 
     if export and all_results:
         export_results(phone_number, 'phone', all_results, export)
