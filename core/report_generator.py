@@ -31,6 +31,17 @@ def generate_mermaid_graph(target, results):
             # Check for crypto wallets
             if "btc_info" in data or "eth_info" in data:
                 graph.append(f"    {m_id} -- owner --> CW[Crypto Wallet]")
+
+    # 3. Visualize Correlations as direct bridges between modules
+    correlations = results.get("correlations", [])
+    for c in correlations:
+        # Match entity labels to module IDs
+        # labels are like "GitHub Profile" or "Email: ..."
+        if "Profile" in c["entity_a"] and "Profile" in c["entity_b"]:
+            p1 = c["entity_a"].split(" ")[0].replace(" ", "_")
+            p2 = c["entity_b"].split(" ")[0].replace(" ", "_")
+            # Create a bidirectional high-linkage edge
+            graph.append(f"    {p1} <==> |{c['score']}%| {p2}")
                 
     return "\n".join(graph)
 
