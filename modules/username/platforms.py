@@ -109,7 +109,7 @@ def check_platform(username, platform, url_template):
         
         # 1. Check for obvious 404
         if response.status_code == 404:
-            return platform, url, False
+            return platform, url, False, None
             
         # 2. Site-specific content validation (soft 404 detection)
         # Many platforms return 200 OK even if the user is not found (SPAs like TikTok, Instagram, etc)
@@ -130,7 +130,7 @@ def check_platform(username, platform, url_template):
         
         for indicator in not_found_indicators:
             if indicator.lower() in content:
-                return platform, url, False
+                return platform, url, False, None
         
         import re
         title_match = re.search(r'<title>(.*?)</title>', response.text, re.IGNORECASE)
@@ -139,25 +139,25 @@ def check_platform(username, platform, url_template):
         # Platform specific tricky cases and precise title matches
         if platform == "Instagram":
             if "login" in response.url or title_text == "Instagram":
-                return platform, url, False
+                return platform, url, False, None
         if platform == "LinkedIn" and "public-profile/in" not in response.url and "authwall" in response.url:
-            return platform, url, False
+            return platform, url, False, None
         if platform == "Reddit" and ("wait for verification" in content or title_text == "Reddit - Dive into anything"):
-            return platform, url, False
+            return platform, url, False, None
         if platform == "Steam" and "Error" in title_text:
-            return platform, url, False
+            return platform, url, False, None
         if platform == "Imgur" and title_text == "Imgur: The magic of the Internet":
-            return platform, url, False
+            return platform, url, False, None
         if platform == "DailyMotion" and title_text == "Dailymotion":
-            return platform, url, False
+            return platform, url, False, None
         if platform == "TryHackMe" and title_text == "TryHackMe | Cyber Security Training":
-            return platform, url, False
+            return platform, url, False, None
         if platform in ["Discord", "Kaggle", "HackerRank", "TryHackMe", "CodeChef", "Codingame", "HackTheBox", "RootMe", "HackThisSite", "Intigriti", "Aizu", "Taringa", "Telegram"]:
             # These are notorious for Soft 404s and anti-scraping
             if title_text == "" or title_text.lower() == platform.lower():
-                return platform, url, False
+                return platform, url, False, None
             if username.lower() not in title_text.lower():
-                return platform, url, False
+                return platform, url, False, None
             
         # Catch generic titles for SPAs that always return 200 OK
         generic_spa_titles = {
@@ -172,18 +172,29 @@ def check_platform(username, platform, url_template):
         if platform in generic_spa_titles:
             # If the title exactly matches the generic site title OR it doesn't contain the username
             if title_text == generic_spa_titles[platform] or title_text == "":
-                return platform, url, False
+                return platform, url, False, None
         
         if platform == "Wordpress" and "doesn" in content and "exist" in content:
-            return platform, url, False
+            return platform, url, False, None
+
             
         # 3. Fallback to status code if no specific rule matched
         if response.status_code == 200:
-            return platform, url, True
+            # Successfully found! Let's extract metadata (Bio / True Name)
+            import html
+            extracted_bio = "No description available"
+            desc_match = re.search(r'<meta\s+(?:name|property)=["\'](?:og:)?description["\']\s+content=["\'](.*?)["\']\s*/?>', response.text, re.IGNORECASE)
+            if desc_match:
+                # Clean up the bio (remove excessive whitespace, html entities, etc)
+                raw_bio = html.unescape(desc_match.group(1).strip())
+                # Truncate to avoid massive report bloat
+                extracted_bio = (raw_bio[:200] + '...') if len(raw_bio) > 200 else raw_bio
+                
+            return platform, url, True, extracted_bio
             
-        return platform, url, False
+        return platform, url, False, None
     except requests.RequestException:
-        return platform, url, None
+        return platform, url, None, None
 
 def run(username: str):
     console.print(f"[bold cyan]🚀 Launching concurrent username scan...[/bold cyan]")
@@ -207,10 +218,12 @@ def run(username: str):
             for future in concurrent.futures.as_completed(futures):
                 platform = futures[future]
                 try:
-                    platform, url, exists = future.result()
+                    platform, url, exists, bio = future.result()
                     if exists is True:
                         progress.console.print(f"[bold green]✔ FOUND[/bold green] - [white]{platform}[/white]: {url}")
-                        results[platform] = {"status": "found", "url": url}
+                        if bio and bio != "No description available":
+                            progress.console.print(f"    [dim]↳ Bio: {bio}[/dim]")
+                        results[platform] = {"status": "found", "url": url, "extracted_bio": bio}
                         found_count += 1
                     elif exists is False:
                         # Don't clutter the beautiful UI with not found logs, just update progress
