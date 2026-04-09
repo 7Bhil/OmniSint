@@ -1,4 +1,5 @@
 import json
+from typing import Dict, Any
 from core.console import console
 from core.network import request as network_request
 
@@ -33,9 +34,9 @@ def get_eth_balance(address):
         pass
     return None
 
-def run(wallet_address: str):
+def run(wallet_address: str) -> Dict[str, Any]:
     console.print(f"[neon]🔍 Analyzing Crypto Wallet:[/neon] [white]{wallet_address}[/white]")
-    results = {"address": wallet_address}
+    results: Dict[str, Any] = {"address": wallet_address}
     
     if wallet_address.startswith('1') or wallet_address.startswith('3') or wallet_address.startswith('bc1'):
         # Looks like BTC

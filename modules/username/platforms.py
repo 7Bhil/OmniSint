@@ -1,4 +1,5 @@
 import concurrent.futures
+from typing import Dict, Any
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from core.console import console
 from core.network import request as network_request
@@ -205,12 +206,12 @@ def check_platform(username, platform, url_template):
     except Exception:
         return platform, url, None, None
 
-def run(username: str, adult_content: bool = False):
+def run(username: str, adult_content: bool = False) -> Dict[str, Any]:
     console.print(f"[bold cyan]🚀 Launching concurrent username scan...[/bold cyan]")
     if adult_content:
         console.print("[bold red]🔞 [18+] Platforms ENABLED.[/bold red]")
     
-    results = {}
+    results: Dict[str, Any] = {}
     found_count = 0
     
     # Filter platforms based on adult content filter

@@ -1,4 +1,5 @@
 import json
+from typing import Dict, Any
 from core.console import console
 from core.network import request as network_request
 
@@ -24,12 +25,12 @@ def check_breaches(target):
         pass
     return None
 
-def run(target: str):
+def run(target: str) -> Dict[str, Any]:
     is_phone = target.startswith('+') or target.isdigit()
     label = "Phone Number" if is_phone else "Email"
     
     console.print(f"[neon]⚡ Checking Data Breaches for {label}:[/neon] [white]{target}[/white]")
-    results = {"target": target, "type": label}
+    results: Dict[str, Any] = {"target": target, "type": label}
     
     breaches = check_breaches(target)
     

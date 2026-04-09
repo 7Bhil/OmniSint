@@ -2,6 +2,7 @@ import json
 from bs4 import BeautifulSoup
 from core.console import console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from typing import Dict, Any, List
 import urllib.parse
 import re
 import time
@@ -47,9 +48,9 @@ def search_duckduckgo(query: str):
         pass
     return []
 
-def run(phone_number: str):
+def run(phone_number: str) -> Dict[str, Any]:
     console.print(f"[info]Starting Advanced Stealth Dorking for '{phone_number}'...[/info]")
-    results = {"phone_number": phone_number, "dork_hits": []}
+    results: Dict[str, Any] = {"phone_number": phone_number, "dork_hits": []}
     
     clean_number = re.sub(r'\D', '', phone_number)
     local_number = clean_number[3:] if len(clean_number) > 10 else clean_number
@@ -65,7 +66,7 @@ def run(phone_number: str):
         f'site:pastebin.com "{phone_number}" OR "{clean_number}"'
     ]
     
-    all_hits = []
+    all_hits: List[Dict[str, str]] = []
     
     with Progress(
         SpinnerColumn(),

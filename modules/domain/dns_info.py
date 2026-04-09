@@ -1,5 +1,6 @@
 import socket
 import json
+from typing import Dict, Any
 import whois
 from core.console import console
 from core.network import request as network_request
@@ -22,9 +23,9 @@ def get_ip_info(ip):
         pass
     return None
 
-def run(domain: str):
+def run(domain: str) -> Dict[str, Any]:
     console.print(f"[info]Starting DNS and IP Check for '{domain}'...[/info]")
-    results = {"domain": domain}
+    results: Dict[str, Any] = {"domain": domain}
     
     try:
         ip = socket.gethostbyname(domain)
