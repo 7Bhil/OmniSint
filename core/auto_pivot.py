@@ -33,19 +33,40 @@ def analyze_and_pivot(raw_data: dict, current_target: str, seen_entities: set):
     email_pattern = r'[a-zA-Z0-9_\-\.]+@[a-zA-Z0-9_\-\.]+\.[a-zA-Z]{2,5}'
     btc_pattern = r'\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b|bc1[a-z0-9]{39,59}\b'
     eth_pattern = r'\b0x[a-fA-F0-9]{40}\b'
+    phone_pattern = r'(?:\+|00)[1-9][0-9 \-\(\)\.]{7,32}'
     
-    emails = set(re.findall(email_pattern, data_str))
+    found_emails = set(re.findall(email_pattern, data_str))
     wallets = set(re.findall(btc_pattern, data_str)) | set(re.findall(eth_pattern, data_str))
+    found_phones = set(re.findall(phone_pattern, data_str))
     
     # Extract emails from discovered lists if present (from dorking/breaches)
-    discovered_emails = raw_data.get("discovered_emails", [])
-    for email in discovered_emails:
+    discovered_emails = set(raw_data.get("discovered_emails", []))
+    all_emails = found_emails | discovered_emails
+    
+    for email in all_emails:
         email = email.lower()
-        if email not in seen_entities:
+        if email not in seen_entities and not email.startswith('admin@') and not email.startswith('no-reply@'):
             console.print(f"\n[purple]🔄 [Auto-Pivot] Pivoting on Discovered Email: {email}[/purple]")
             seen_entities.add(email)
             results = execute_module('email', email, seen_entities)
             pivot_results.update(results)
+            
+    for phone in found_phones:
+        clean_phone = re.sub(r'[^0-9\+]', '', phone)
+        # Avoid short strings that just happened to match a +
+        if len(clean_phone) >= 10 and clean_phone not in seen_entities:
+            console.print(f"\n[purple]🔄 [Auto-Pivot] Pivoting on Discovered Phone: {clean_phone}[/purple]")
+            seen_entities.add(clean_phone)
+            results = execute_module('phone', clean_phone, seen_entities)
+            pivot_results.update(results)
+            
+    for wallet in wallets:
+        if wallet.lower() not in seen_entities:
+            console.print(f"\n[purple]🔄 [Auto-Pivot] Pivoting on Discovered Crypto Wallet: {wallet}[/purple]")
+            seen_entities.add(wallet.lower())
+            results = execute_module('crypto', wallet, seen_entities)
+            pivot_results.update(results)
+
 
     # Extract names and trigger a 'username' style search as a proxy for identity
     discovered_names = raw_data.get("discovered_names", [])
