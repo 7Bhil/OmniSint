@@ -1,5 +1,5 @@
 import click
-from core.console import console
+from core.console import console, display_intel_summary
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from core.plugins import load_plugins
@@ -47,6 +47,7 @@ def user(username, adult_content, export):
     correlations = correlate_identities(all_results, username)
     display_correlations(correlations)
     all_results["correlations"] = correlations
+    display_intel_summary(all_results)
                 
     if export and all_results:
         export_results(username, 'username', all_results, export)
@@ -81,6 +82,7 @@ def domain(domain_name, export):
     correlations = correlate_identities(all_results, domain_name)
     display_correlations(correlations)
     all_results["correlations"] = correlations
+    display_intel_summary(all_results)
                 
     if export and all_results:
         export_results(domain_name, 'domain', all_results, export)
@@ -115,6 +117,7 @@ def email(email_address, export):
     correlations = correlate_identities(all_results, email_address)
     display_correlations(correlations)
     all_results["correlations"] = correlations
+    display_intel_summary(all_results)
                 
     if export and all_results:
         export_results(email_address, 'email', all_results, export)
@@ -168,6 +171,7 @@ def intel(target, adult_content, export):
     correlations = correlate_identities(all_results, target)
     display_correlations(correlations)
     all_results["correlations"] = correlations
+    display_intel_summary(all_results)
     
     if all_results:
         export_results(target, target_type, all_results, export)
@@ -204,6 +208,7 @@ def phone(phone_number, export):
     correlations = correlate_identities(all_results, phone_number)
     display_correlations(correlations)
     all_results["correlations"] = correlations
+    display_intel_summary(all_results)
                 
     if export and all_results:
         export_results(phone_number, 'phone', all_results, export)
