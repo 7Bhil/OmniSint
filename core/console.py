@@ -72,7 +72,9 @@ def get_banner():
     
     banner_markup = ""
     for i, line in enumerate(raw_banner):
-        banner_markup += f"[attr=color({colors[i]})]{line}[/]\n"
+        # Escape brackets to avoid markup issues with ASCII art
+        clean_line = line.replace("[", "[[").replace("]", "]]")
+        banner_markup += f"[{colors[i]}]{clean_line}[/]\n"
         
     return Panel(
         Text.from_markup(banner_markup),
