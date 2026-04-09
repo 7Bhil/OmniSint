@@ -56,10 +56,10 @@ def display_intel_summary(all_results):
         console.print("[dim]Check the HTML report for full correlation map and evidence.[/dim]\n")
 
 def get_banner():
-    # Vertical Gradient Colors: Cyan -> Purple (7 lines)
-    colors = ["#00ffd8", "#00ebff", "#00d7ff", "#00c3ff", "#5e00ff", "#9600ff", "#bc00ff"]
+    # Vertical Gradient Colors: Matrix Green Palette (7 lines)
+    colors = ["#00FF41", "#00F03C", "#00E137", "#00D232", "#00C32D", "#00B428", "#008F11"]
     
-    # Original '::::' font from v0.5/v1 logs
+    # Original '::::' font style
     raw_banner = [
         r"      ::::::::  ::::     ::::  ::::    ::: :::::::::::  ::::::::  ::::::::::: ::::    ::: ::::::::::: ",
         r"     :+:    :+: +:+:+: :+:+:+  :+:+:   :+:     :+:     :+:    :+:     :+:     :+:+:   :+:     :+:     ",
@@ -76,7 +76,7 @@ def get_banner():
         
     return Panel(
         Text.from_markup(banner_markup),
-        subtitle="[bold purple]OmniSint Elite v1.0.0[/bold purple]",
-        border_style="purple",
+        subtitle="[bold green]OmniSint Elite v1.0.0[/bold green]",
+        border_style="green",
         padding=(0, 2)
     )
