@@ -4,7 +4,7 @@ import holehe.modules
 from holehe.core import import_submodules
 from typing import List, Dict, Any
 from core.console import console
-from core.network import get_proxy
+from core.proxy_manager import proxy_manager
 
 async def check_email(email):
     out = []
@@ -22,10 +22,10 @@ async def check_email(email):
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
     }
     
-    proxies = get_proxy()
+    proxies = proxy_manager.get_proxy()
     proxy_config = proxies.get("http") if proxies else None
 
-    async with httpx.AsyncClient(headers=headers, timeout=15, proxies=proxy_config) as client:
+    async with httpx.AsyncClient(headers=headers, timeout=15, proxy=proxy_config) as client:
         async with trio.open_nursery() as nursery:
             for module in modules:
                 nursery.start_soon(run_module, module, email, client, out)
