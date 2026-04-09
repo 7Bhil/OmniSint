@@ -1,5 +1,6 @@
-import requests
+import json
 from core.console import console
+from core.network import request as network_request
 
 # This module uses the public HaveIBeenPwned API (Breaches endpoint)
 # Note: For free users, the API is rate-limited and requires a header.
@@ -9,16 +10,15 @@ def check_breaches(target):
     try:
         # HIBP supports both emails and phone numbers (though phone numbers usually require full international format)
         url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{target}"
-        headers = {
-            "User-Agent": "OmniSint-Elite-Investigator",
-        }
-        response = requests.get(url, headers=headers, timeout=5)
+        res = network_request(url, timeout=5)
         
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code == 404:
+        status_code = res.get("status_code", 0)
+        
+        if status_code == 200:
+            return json.loads(res["text"])
+        elif status_code == 404:
             return []
-        elif response.status_code == 401:
+        elif status_code == 401:
             return "API_KEY_REQUIRED"
     except Exception:
         pass

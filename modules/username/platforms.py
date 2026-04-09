@@ -1,7 +1,7 @@
-import requests
 import concurrent.futures
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from core.console import console
+from core.network import request as network_request
 
 PLATFORMS = {
     "GitHub": "https://github.com/{}",
@@ -108,17 +108,21 @@ ADULT_PLATFORMS = [
 
 def check_platform(username, platform, url_template):
     url = url_template.format(username)
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+    res = network_request(url, timeout=5)
+    
+    status_code = res.get("status_code", 0)
+    text = res.get("text", "")
+    final_url = res.get("url", url)
+
     try:
-        response = requests.get(url, headers=headers, timeout=5, allow_redirects=True)
-        
-        # 1. Check for obvious 404
-        if response.status_code == 404:
+        # 1. Check for obvious 404 or connection error
+        if status_code == 0:
+            return platform, url, None, None
+        if status_code == 404:
             return platform, url, False, None
             
         # 2. Site-specific content validation (soft 404 detection)
-        # Many platforms return 200 OK even if the user is not found (SPAs like TikTok, Instagram, etc)
-        content = response.text.lower()
+        content = text.lower()
         
         # Global indicators of a non-existent profile
         not_found_indicators = [
@@ -138,14 +142,14 @@ def check_platform(username, platform, url_template):
                 return platform, url, False, None
         
         import re
-        title_match = re.search(r'<title>(.*?)</title>', response.text, re.IGNORECASE)
+        title_match = re.search(r'<title>(.*?)</title>', text, re.IGNORECASE)
         title_text = title_match.group(1).strip() if title_match else ""
 
         # Platform specific tricky cases and precise title matches
         if platform == "Instagram":
-            if "login" in response.url or title_text == "Instagram":
+            if "login" in final_url or title_text == "Instagram":
                 return platform, url, False, None
-        if platform == "LinkedIn" and "public-profile/in" not in response.url and "authwall" in response.url:
+        if platform == "LinkedIn" and "public-profile/in" not in final_url and "authwall" in final_url:
             return platform, url, False, None
         if platform == "Reddit" and ("wait for verification" in content or title_text == "Reddit - Dive into anything"):
             return platform, url, False, None
@@ -184,11 +188,11 @@ def check_platform(username, platform, url_template):
 
             
         # 3. Fallback to status code if no specific rule matched
-        if response.status_code == 200:
+        if status_code == 200:
             # Successfully found! Let's extract metadata (Bio / True Name)
             import html
             extracted_bio = "No description available"
-            desc_match = re.search(r'<meta\s+(?:name|property)=["\'](?:og:)?description["\']\s+content=["\'](.*?)["\']\s*/?>', response.text, re.IGNORECASE)
+            desc_match = re.search(r'<meta\s+(?:name|property)=["\'](?:og:)?description["\']\s+content=["\'](.*?)["\']\s*/?>', text, re.IGNORECASE)
             if desc_match:
                 # Clean up the bio (remove excessive whitespace, html entities, etc)
                 raw_bio = html.unescape(desc_match.group(1).strip())
@@ -198,7 +202,7 @@ def check_platform(username, platform, url_template):
             return platform, url, True, extracted_bio
             
         return platform, url, False, None
-    except requests.RequestException:
+    except Exception:
         return platform, url, None, None
 
 def run(username: str, adult_content: bool = False):

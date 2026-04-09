@@ -1,12 +1,13 @@
-import requests
+import json
 from core.console import console
+from core.network import request as network_request
 
 def get_btc_balance(address):
     try:
         url = f"https://blockchain.info/rawaddr/{address}"
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
+        res = network_request(url, timeout=10)
+        if res.get("status_code") == 200:
+            data = json.loads(res["text"])
             return {
                 "balance_btc": data.get("final_balance", 0) / 100000000,
                 "n_tx": data.get("n_tx"),
@@ -20,9 +21,9 @@ def get_eth_balance(address):
     # Using a public block explorer API (simplified for demonstration)
     try:
         url = f"https://api.blockcypher.com/v1/eth/main/addrs/{address}/balance"
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
+        res = network_request(url, timeout=10)
+        if res.get("status_code") == 200:
+            data = json.loads(res["text"])
             return {
                 "balance_eth": data.get("balance", 0) / 10**18,
                 "n_tx": data.get("n_tx"),

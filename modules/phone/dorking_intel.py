@@ -1,4 +1,4 @@
-import requests
+import json
 from bs4 import BeautifulSoup
 from core.console import console
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -7,14 +7,10 @@ import re
 import time
 import random
 
+from core.network import request as network_request
+
 def search_duckduckgo(query: str):
-    user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15",
-        "Mozilla/5.0 (X11; Linux x86_64; rv:99.0) Gecko/20100101 Firefox/99.0"
-    ]
     headers = {
-        "User-Agent": random.choice(user_agents),
         "Referer": "https://duckduckgo.com/"
     }
     
@@ -24,15 +20,16 @@ def search_duckduckgo(query: str):
     try:
         # random delay to look human
         time.sleep(random.uniform(0.5, 1.5))
-        response = requests.post(url, headers=headers, data=data, timeout=10)
-        if response.status_code == 200:
+        res = network_request(url, method="POST", headers=headers, data=data, timeout=10)
+        
+        if res.get("status_code") == 200:
             try:
                 import lxml
                 parser = "lxml"
             except ImportError:
                 parser = "html.parser"
                 
-            soup = BeautifulSoup(response.text, parser)
+            soup = BeautifulSoup(res["text"], parser)
             results = []
             
             for result in soup.find_all('div', class_='result'):

@@ -1,14 +1,16 @@
 import socket
-import requests
+import json
 import whois
 from core.console import console
+from core.network import request as network_request
 
 def get_ip_info(ip):
     try:
         # Using ip-api.com for quick IP info
-        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=5)
-        if response.status_code == 200:
-            data = response.json()
+        url = f"http://ip-api.com/json/{ip}"
+        res = network_request(url, timeout=5)
+        if res.get("status_code") == 200:
+            data = json.loads(res["text"])
             if data.get("status") == "success":
                 return {
                     "Country": data.get("country"),
@@ -16,7 +18,7 @@ def get_ip_info(ip):
                     "ISP": data.get("isp"),
                     "Org": data.get("org")
                 }
-    except requests.RequestException:
+    except Exception:
         pass
     return None
 
