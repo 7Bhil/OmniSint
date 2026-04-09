@@ -29,7 +29,6 @@ PLATFORMS = {
     "Facebook": "https://www.facebook.com/{}",
     "LinkedIn": "https://www.linkedin.com/in/{}",
     "WhatsApp": "https://wa.me/{}",
-    "Telegram": "https://t.me/{}",
     "Snapchat": "https://www.snapchat.com/add/{}",
     "YouTube": "https://www.youtube.com/@{}",
     "Behance": "https://www.behance.net/{}",
@@ -113,14 +112,69 @@ def check_platform(username, platform, url_template):
             return platform, url, False
             
         # 2. Site-specific content validation (soft 404 detection)
+        # Many platforms return 200 OK even if the user is not found (SPAs like TikTok, Instagram, etc)
         content = response.text.lower()
-        if platform == "Instagram" and ("login" in response.url or "vrai nom" in content or "page non trouvée" in content or "not available" in content or "plus disponible" in content):
+        
+        # Global indicators of a non-existent profile
+        not_found_indicators = [
+            "page non trouvée", "not available", "plus disponible",
+            "doesn't exist", "doesn’t exist", "nobody here", "not found",
+            "page not found", "couldn't find", "account suspended",
+            "user not found", "the page you're looking for isn't here",
+            "This page doesn't exist", "Sorry, this page isn't available",
+            "404 not found", "Oops! That page can't be found.",
+            "error 404", "This user is no longer active",
+            "has been suspended", "<title>404", "<title>Error 404",
+            "profile not found", "page introuvable"
+        ]
+        
+        for indicator in not_found_indicators:
+            if indicator.lower() in content:
+                return platform, url, False
+        
+        import re
+        title_match = re.search(r'<title>(.*?)</title>', response.text, re.IGNORECASE)
+        title_text = title_match.group(1).strip() if title_match else ""
+
+        # Platform specific tricky cases and precise title matches
+        if platform == "Instagram":
+            if "login" in response.url or title_text == "Instagram":
+                return platform, url, False
+        if platform == "LinkedIn" and "public-profile/in" not in response.url and "authwall" in response.url:
             return platform, url, False
-        if platform == "Twitter" and ("doesn't exist" in content or "page non trouvée" in content):
+        if platform == "Reddit" and ("wait for verification" in content or title_text == "Reddit - Dive into anything"):
             return platform, url, False
-        if platform == "Reddit" and ("nobody here" in content or "page non trouvée" in content):
+        if platform == "Steam" and "Error" in title_text:
             return platform, url, False
-        if platform == "GitHub" and "not found" in content:
+        if platform == "Imgur" and title_text == "Imgur: The magic of the Internet":
+            return platform, url, False
+        if platform == "DailyMotion" and title_text == "Dailymotion":
+            return platform, url, False
+        if platform == "TryHackMe" and title_text == "TryHackMe | Cyber Security Training":
+            return platform, url, False
+        if platform in ["Discord", "Kaggle", "HackerRank", "TryHackMe", "CodeChef", "Codingame", "HackTheBox", "RootMe", "HackThisSite", "Intigriti", "Aizu", "Taringa", "Telegram"]:
+            # These are notorious for Soft 404s and anti-scraping
+            if title_text == "" or title_text.lower() == platform.lower():
+                return platform, url, False
+            if username.lower() not in title_text.lower():
+                return platform, url, False
+            
+        # Catch generic titles for SPAs that always return 200 OK
+        generic_spa_titles = {
+            "OnlyFans": "OnlyFans",
+            "Zoj": "ZOJ",
+            "MyFreeCams": "MyFreeCams",
+            "Cam4": "Cam4",
+            "Mixcloud": "Mixcloud",
+            "Wordpress": "WordPress.com"
+        }
+        
+        if platform in generic_spa_titles:
+            # If the title exactly matches the generic site title OR it doesn't contain the username
+            if title_text == generic_spa_titles[platform] or title_text == "":
+                return platform, url, False
+        
+        if platform == "Wordpress" and "doesn" in content and "exist" in content:
             return platform, url, False
             
         # 3. Fallback to status code if no specific rule matched
